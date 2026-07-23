@@ -1,0 +1,174 @@
+{
+  "name": "Ticket Triage - Daily Report",
+  "nodes": [
+    {
+      "parameters": {
+        "collection": "tickets",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "23d3af6a-71da-4abd-8b1e-70a98ec254b1",
+      "name": "Find documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5:latest",
+          "mode": "list",
+          "cachedResultName": "qwen2.5:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are writing a daily support report summary for a manager.\n\nToday's data:\nTotal tickets: {{ $json.total }}\nBy category: {{ JSON.stringify($json.categories) }}\nBy status: {{ JSON.stringify($json.statuses) }}\nEscalated: {{ $json.escalated }}\nHigh urgency: {{ $json.highUrgency }}\n\nWrite a short 3-4 line summary. Plain text, no markdown. Mention the biggest concern if any."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -16
+      ],
+      "id": "7b0d6e42-1e98-4c73-96f8-13cde4d08903",
+      "name": "Message a model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "PDgVcKj9M3JFny1a",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6335298769",
+        "text": "=Daily Report Summary And Details : {{ $json.content }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "5e6772f7-64c3-434a-9940-8b4ddfcd53f5",
+      "name": "Send a text message",
+      "webhookId": "b547a5d9-fe8e-4a23-9fa1-ed0bb3122dde",
+      "credentials": {
+        "telegramApi": {
+          "id": "Y7w7PGF5xikVpBLa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        -16
+      ],
+      "id": "8d882b54-72e2-460d-af3e-89fe32351939",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tickets = $input.all().map(i => i.json);\n\nconst total = tickets.length;\n\nconst categories = {};\nfor (const t of tickets) {\n  const c = t.category || 'unknown';\n  categories[c] = (categories[c] || 0) + 1;\n}\n\nconst statuses = {};\nfor (const t of tickets) {\n  const s = t.status || 'unknown';\n  statuses[s] = (statuses[s] || 0) + 1;\n}\n\nconst escalated = tickets.filter(t => t.escalated === true).length;\nconst highUrgency = tickets.filter(t => t.urgency === 'high').length;\n\nreturn [{\n  json: {\n    total,\n    categories,\n    statuses,\n    escalated,\n    highUrgency\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "1fd08ff3-6398-45ce-83f5-7af2ac74df84",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Find documents": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QxMxw8S60HTFpBkM",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "5558805e-6f23-4dd3-9082-b5db517e0e35",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6c952d8d191187d9b11c6a3b097e77b902efc7e4d72d526142941b472153203"
+  },
+  "id": "IIO0JNV5K2A0IwFG",
+  "tags": []
+}

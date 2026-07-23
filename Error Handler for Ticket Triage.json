@@ -1,0 +1,64 @@
+{
+  "name": "Error Handler for Ticket Triage",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -16
+      ],
+      "id": "0ab22607-5e63-4199-ae53-8be68b0e7c25",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "6335298769",
+        "text": "=This error has occurred in Ticket Triage System :  \nError : {{ $json.execution.error.message }},\nWorkflow : {{ $json.workflow.name }},\nNode : {{ $json.execution.lastNodeExecuted }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        -16
+      ],
+      "id": "6c7ffd17-7808-430f-bad6-4424f6aa2fb7",
+      "name": "Send a text message",
+      "webhookId": "11d31a35-4dd2-499c-8496-1ccfbb16f765",
+      "credentials": {
+        "telegramApi": {
+          "id": "Y7w7PGF5xikVpBLa",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ba95e31f-b7a6-4fa0-9eca-0c3924b5fd9c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6c952d8d191187d9b11c6a3b097e77b902efc7e4d72d526142941b472153203"
+  },
+  "id": "QxMxw8S60HTFpBkM",
+  "tags": []
+}

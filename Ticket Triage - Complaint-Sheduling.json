@@ -1,0 +1,234 @@
+{
+  "name": "Ticket Triage - Complaint-Sheduling",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        -64
+      ],
+      "id": "73339e62-0d9a-4bd2-893e-a13d1323012b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "collection": "tickets",
+        "options": {},
+        "query": "{ \"status\": \"awaiting_approval\", \"escalated\": { \"$ne\": true } }"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        192,
+        -64
+      ],
+      "id": "71e6dcf7-bf87-458c-8b24-289749f563d5",
+      "name": "Find documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8d683ac8-7f27-4e88-a069-d1bd78fd57ca",
+              "leftValue": "={{ (Date.now() - new Date($json.submittedAt).getTime()) / 60000 }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        -64
+      ],
+      "id": "15f4df22-bcd5-4d90-95b2-9b9010fb3c02",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "6335298769",
+        "text": "=Complaint urgency alert : \nID : {{ $json._id }}, \nDraft : \"This complaint requires quick action, moving to high urgency complaint\",\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "481c3898-ec86-4661-a29c-1bce24010f53",
+      "name": "Send a text message",
+      "webhookId": "8fe94a73-9b67-45d5-8d71-7be035ad1892",
+      "credentials": {
+        "telegramApi": {
+          "id": "Y7w7PGF5xikVpBLa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "tickets",
+        "updateKey": "_id",
+        "fields": "=escalated,urgency",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        1232,
+        -128
+      ],
+      "id": "cc06b2a0-0736-4675-8478-3f45602f3879",
+      "name": "Update documents1",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d9fc308a-e75d-4ee6-ba1f-e70f23c3c386",
+              "name": "escalated",
+              "value": "=true",
+              "type": "boolean"
+            },
+            {
+              "id": "a583655c-2ba1-412c-b999-4b05e27cbdd4",
+              "name": "=_id",
+              "value": "={{ $('If').first().json._id }}",
+              "type": "string"
+            },
+            {
+              "id": "8a8b544f-24c7-457b-90c0-7507c4f9e43a",
+              "name": "urgency",
+              "value": "high",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        -128
+      ],
+      "id": "7b0b2246-be40-49d7-97e7-0f1786b81b97",
+      "name": "Edit Fields2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Find documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find documents": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Update documents1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QxMxw8S60HTFpBkM",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "be98c9aa-936f-4c4c-859d-8ccc13c60e08",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6c952d8d191187d9b11c6a3b097e77b902efc7e4d72d526142941b472153203"
+  },
+  "id": "6nFV3zpA6fWNkfyf",
+  "tags": []
+}

@@ -1,0 +1,266 @@
+{
+  "name": "Ticket Triage - Human Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "e629fc1a-a033-41d7-b7dd-8ddfb82d138d",
+      "name": "Telegram Trigger",
+      "webhookId": "9b60aeb7-7dd4-4281-98ba-b8a733207cac",
+      "credentials": {
+        "telegramApi": {
+          "id": "Y7w7PGF5xikVpBLa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41f4d85d-1337-4d7a-b362-bcc3cfba2bde",
+              "name": "action",
+              "value": "={{ $json.callback_query.data.split('_')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "1c3c47a5-0250-4273-bb2e-52a033fc0e7a",
+              "name": "ticketId",
+              "value": "={{ $json.callback_query.data.split('_')[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        0
+      ],
+      "id": "9e407b53-6441-46ef-97d3-312641ecfd0f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c8d1d4c2-8ddc-4a58-b547-7f8c923e6402",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d6edbf40-9df4-45ea-acf8-d0dad4be7c87",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "566a6fac-505e-478d-a7aa-4a0db10521c1",
+              "name": "_id",
+              "value": "={{ $json.ticketId }}",
+              "type": "string"
+            },
+            {
+              "id": "5623358b-83fa-4929-a43c-de5d197d8cbe",
+              "name": "status",
+              "value": "resolving",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        -160
+      ],
+      "id": "500d6bd6-e85c-4316-bcbb-7926845a88fc",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "566a6fac-505e-478d-a7aa-4a0db10521c1",
+              "name": "_id",
+              "value": "={{ new ObjectId($('Edit Fields').first().json.ticketId) }}",
+              "type": "string"
+            },
+            {
+              "id": "5623358b-83fa-4929-a43c-de5d197d8cbe",
+              "name": "status",
+              "value": "needs human update",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        128
+      ],
+      "id": "4a3ef799-a9f2-4df3-a01c-2136194d673e",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "tickets",
+        "updateKey": "_id",
+        "fields": "status",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        -16
+      ],
+      "id": "dd303d6b-c3c4-4725-a6b2-aed6c411037e",
+      "name": "Update documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "callback_query": {
+            "data": "approve_6a541425db5f734a50410668",
+            "from": {
+              "id": 6335298769
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Update documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Update documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QxMxw8S60HTFpBkM",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "1bd6dc2f-e284-49b3-94d3-8158d11b4644",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6c952d8d191187d9b11c6a3b097e77b902efc7e4d72d526142941b472153203"
+  },
+  "id": "HBBiPTDv1PZEtRxw",
+  "tags": []
+}

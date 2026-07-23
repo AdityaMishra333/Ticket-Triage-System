@@ -1,0 +1,475 @@
+{
+  "name": "Ticket-Triage-System",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Complaint Enquiry",
+        "formDescription": "Please describe your problem related to our service",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Customer Name"
+            },
+            {
+              "fieldLabel": "Problem",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Item",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Service Date",
+              "fieldType": "date"
+            },
+            {
+              "fieldLabel": "Your Email",
+              "fieldType": "email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -288,
+        -16
+      ],
+      "id": "2bf9809b-6628-4200-890c-c0334cf99626",
+      "name": "On form submission",
+      "webhookId": "b8a4887b-b096-475a-a85b-17a2ce8dab8d"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "tickets",
+        "fields": "=customerName,problem,item,serviceDate,yourEmail,status,submittedAt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        224
+      ],
+      "id": "6831c161-6c36-42e8-a02d-bcf982b36487",
+      "name": "Insert documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "44260992-e072-443c-b04a-b20c2bccc2af",
+              "name": "customerName",
+              "value": "={{ $json['Customer Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "d582dab4-3fe3-4493-84fd-08c69d688e06",
+              "name": "problem",
+              "value": "={{ $json.Problem }}",
+              "type": "string"
+            },
+            {
+              "id": "5aa0ef9c-23b0-46cc-a5f5-28c4edc693f2",
+              "name": "item",
+              "value": "={{ $json.Item }}",
+              "type": "string"
+            },
+            {
+              "id": "6c9c5f43-5ddc-4f0e-b478-70279b3c1a38",
+              "name": "serviceDate",
+              "value": "={{ $json['Service Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f5e7c18a-af1a-46fa-9012-5c91f210bef3",
+              "name": "yourEmail",
+              "value": "={{ $json['Your Email'] }}",
+              "type": "string"
+            },
+            {
+              "id": "507df262-e8a7-46e0-9cd9-7220e8be8648",
+              "name": "submittedAt",
+              "value": "={{ $json.submittedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "9b309479-7e46-4736-93a0-cf0d8de244ee",
+              "name": "formMode",
+              "value": "={{ $json.formMode }}",
+              "type": "string"
+            },
+            {
+              "id": "9cf95cc9-c34d-4b8e-b73f-12775b4f14f2",
+              "name": "status",
+              "value": "new",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        -256
+      ],
+      "id": "57df27b9-a610-4da4-90fa-888756596abf",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5:latest",
+          "mode": "list",
+          "cachedResultName": "qwen2.5:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Classify this complaint into ONE category: billing, technical, account, delivery, or other. Also rate urgency: high, medium, or low.\n\nComplaint: {{ $json.problem }}\nItem: {{ $json.item }}\n\nReply ONLY with JSON, nothing else:\n{\"category\": \"...\", \"urgency\": \"...\"}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "185b6c44-fb99-4473-aa74-db7a9912d955",
+      "name": "Message a model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "PDgVcKj9M3JFny1a",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa0df5d4-4338-4803-8adc-7354ba33a20b",
+              "name": "category",
+              "value": "={{ JSON.parse($json.content.replace(/```json/g,'').replace(/```/g,'').trim()).category }}",
+              "type": "string"
+            },
+            {
+              "id": "2221142d-16db-4186-ab73-316cf356a93b",
+              "name": "urgency",
+              "value": "={{ JSON.parse($json.content.replace(/```json/g,'').replace(/```/g,'').trim()).urgency }}",
+              "type": "string"
+            },
+            {
+              "id": "9ed43268-f895-4560-ae2d-03398c09b2ce",
+              "name": "status",
+              "value": "=classified",
+              "type": "string"
+            },
+            {
+              "id": "622a25aa-9909-4099-9db5-3e67fd085ee0",
+              "name": "_id",
+              "value": "={{ $('Insert documents').item.json._id.toString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        -240
+      ],
+      "id": "23f3f25d-3eee-4e0c-b9c1-f949e5beb72c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "tickets",
+        "updateKey": "=_id",
+        "fields": "category,urgency,status",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        224
+      ],
+      "id": "360f2da7-1e88-4f37-b40e-b500137454d9",
+      "name": "Update documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5:latest",
+          "mode": "list",
+          "cachedResultName": "qwen2.5:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a professional customer support agent for an e-commerce company. Write a polite, empathetic reply to a customer's complaint.\n\nCustomer's complaint: {{ $('Edit Fields').item.json.problem }}\n\nProduct/item: {{ $('Edit Fields').item.json.item }}\n\nIssue category: {{ $json.category }}\n\nUrgency: {{ $json.urgency }}\n\nGuidelines:\n\n- Acknowledge their specific problem (mention the actual issue, not just the category)\n\n- Be warm and apologetic, but professional\n\n- Give a clear next step or reassurance\n\n- Keep it short: 3-4 sentences max\n\n- Sign off as \"Support Team\"\n\n- Do NOT mention internal labels like category or urgency to the customer\n\nWrite ONLY the reply message, nothing else."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        784,
+        -32
+      ],
+      "id": "e9f83c90-9e73-45ee-9ba9-c6295a92abbc",
+      "name": "Message a model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "PDgVcKj9M3JFny1a",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d9fc308a-e75d-4ee6-ba1f-e70f23c3c386",
+              "name": "draftReply",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "a583655c-2ba1-412c-b999-4b05e27cbdd4",
+              "name": "_id",
+              "value": "={{ $('Insert documents').item.json._id.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "8a8b544f-24c7-457b-90c0-7507c4f9e43a",
+              "name": "status",
+              "value": "awaiting_approval",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        -224
+      ],
+      "id": "9087dc11-0e2d-4b91-abd2-4679563e6d0a",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "tickets",
+        "updateKey": "=_id",
+        "fields": "draftReply, status",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        224
+      ],
+      "id": "0c0fe7c8-abbd-41e4-ae2d-7e9b27dfc88f",
+      "name": "Update documents1",
+      "credentials": {
+        "mongoDb": {
+          "id": "i8aaMawoHEq67xvC",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6335298769",
+        "text": "=New ticket for approval : \nID : {{ $json._id }}, \nDraft : {{ $json.draftReply }}, ",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approve",
+                    "additionalFields": {
+                      "callback_data": "=approve_{{ $json._id }}"
+                    }
+                  },
+                  {
+                    "text": "Reject",
+                    "additionalFields": {
+                      "callback_data": "=reject_{{ $json._id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        -224
+      ],
+      "id": "a626ea85-a7a5-4425-aad8-bccc29088df7",
+      "name": "Send a text message",
+      "webhookId": "8fe94a73-9b67-45d5-8d71-7be035ad1892",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "Y7w7PGF5xikVpBLa",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insert documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert documents": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Update documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update documents": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Update documents1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QxMxw8S60HTFpBkM",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "c16b0783-60f6-4e92-9121-d7dc7fb8ad91",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6c952d8d191187d9b11c6a3b097e77b902efc7e4d72d526142941b472153203"
+  },
+  "id": "8CyRVWGaXIE323Uj",
+  "tags": []
+}
